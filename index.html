@@ -18,6 +18,7 @@
       --green:#16a34a;
       --black:#111;
       --blue:#2563eb;
+      --gray:#64748b;
     }
 
     @media (prefers-color-scheme: dark){
@@ -132,6 +133,23 @@
 
     .controlBtn.pauseState::after{
       display:block;
+    }
+
+    .resetBtn{
+      height:58px;
+      min-width:96px;
+      padding:0 18px;
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(0,0,0,.12);
+      touch-action:manipulation;
+      user-select:none;
+      background:var(--gray);
+      color:#fff;
+      font-size:1rem;
+      font-weight:800;
+      letter-spacing:0.4px;
     }
 
     .sideCard{
@@ -259,6 +277,7 @@
 
       <div class="btnRow">
         <button id="mainBtn" class="controlBtn" aria-label="Timer starten"></button>
+        <button id="resetBtn" class="resetBtn" aria-label="Timer zurücksetzen">Reset</button>
       </div>
     </div>
 
@@ -316,15 +335,18 @@
     const centerTargetTime = document.getElementById('centerTargetTime');
 
     const mainBtn = document.getElementById('mainBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
     const breakPlus = document.getElementById('breakPlus');
     const breakMinus = document.getElementById('breakMinus');
     const breakBig = document.getElementById('breakBig');
 
     const MAX_TOTAL_MIN = 119;
+    const DEFAULT_TOTAL_MIN = 45;
+    const DEFAULT_BREAK_MIN = 10;
 
-    let initialBreak = 10;
-    let initialTotal = 45;
+    let initialBreak = DEFAULT_BREAK_MIN;
+    let initialTotal = DEFAULT_TOTAL_MIN;
 
     try{
       const saved = JSON.parse(localStorage.getItem('ttHandles') || '{}');
@@ -754,9 +776,11 @@
       if(state.running){
         mainBtn.classList.add('pauseState');
         mainBtn.setAttribute('aria-label', 'Timer pausieren');
+        resetBtn.style.display = 'none';
       }else{
         mainBtn.classList.remove('pauseState');
         mainBtn.setAttribute('aria-label', 'Timer starten');
+        resetBtn.style.display = 'inline-flex';
       }
     }
 
@@ -815,6 +839,29 @@
         ticker = null;
       }
 
+      updateUI();
+    }
+
+    function resetTimer(){
+      if(ticker){
+        clearInterval(ticker);
+        ticker = null;
+      }
+
+      state.totalSec = DEFAULT_TOTAL_MIN * 60;
+      state.breakSec = DEFAULT_BREAK_MIN * 60;
+      state.workSec = state.totalSec - state.breakSec;
+
+      state.started = false;
+      state.running = false;
+      state.t0 = 0;
+      state.pausedAcc = 0;
+      state.pauseStart = 0;
+      state.lastPhase = 'work';
+
+      breakBig.textContent = DEFAULT_BREAK_MIN;
+
+      save();
       updateUI();
     }
 
@@ -1042,6 +1089,7 @@
     addRepeater(breakMinus, () => stepBreak(-1));
 
     mainBtn.addEventListener('click', toggleTimer);
+    resetBtn.addEventListener('click', resetTimer);
 
     // Aktualisiert im Einstellungs-/Pause-Modus regelmäßig die Zieluhrzeit,
     // damit die Systemzeit des Geräts berücksichtigt wird.
